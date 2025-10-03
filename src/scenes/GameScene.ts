@@ -4,12 +4,16 @@ import InputManager from '../utils/InputManager'
 import { GAME_CONFIG } from '../config/GameConfig'
 import BoundaryEffect from '../effects/BoundaryEffect'
 import DebugKeys from '../utils/DebugKeys'
+import RoadManager from '../world/RoadManager'
+import BuildingManager from '../world/BuildingManager'
 
 export default class GameScene extends Phaser.Scene {
   private player!: Player
   private inputManager!: InputManager
   private boundaries!: Phaser.Physics.Arcade.StaticGroup
   private boundaryEffect!: BoundaryEffect
+  private roadManager!: RoadManager
+  private buildingManager!: BuildingManager
 
   constructor() {
     super({ key: 'GameScene' })
@@ -26,12 +30,34 @@ export default class GameScene extends Phaser.Scene {
 
     // Create grass field using tileable grass texture
     this.createGrassField()
+
+    // Create road system
+    this.roadManager = new RoadManager(this)
+    const buildingPositions = [
+      GAME_CONFIG.buildings.cityHall,
+      GAME_CONFIG.buildings.socialHall,
+      GAME_CONFIG.buildings.library,
+      GAME_CONFIG.buildings.accountingHouse
+    ]
+    this.roadManager.createMainStreet(buildingPositions)
+    this.roadManager.createVerticalPaths(buildingPositions)
+    this.roadManager.createDecorations(buildingPositions)
+
     this.createBoundaries()
 
-    // Create player in center
-    const centerX = GAME_CONFIG.world.width / 2
-    const centerY = GAME_CONFIG.world.height / 2
-    this.player = new Player(this, centerX, centerY)
+    // Create buildings
+    this.buildingManager = new BuildingManager(this)
+    this.buildingManager.createAllBuildings()
+
+    // Create player at configured start position
+    this.player = new Player(
+      this,
+      GAME_CONFIG.player.startX,
+      GAME_CONFIG.player.startY
+    )
+
+    // Setup building collisions
+    this.buildingManager.setupCollisions(this.player)
 
     // Input setup
     this.inputManager = new InputManager(this)
@@ -51,6 +77,12 @@ export default class GameScene extends Phaser.Scene {
       true,
       GAME_CONFIG.camera.lerp,
       GAME_CONFIG.camera.lerp
+    )
+
+    // Set deadzone to 0 to keep player perfectly centered
+    this.cameras.main.setDeadzone(
+      GAME_CONFIG.camera.deadzone.width,
+      GAME_CONFIG.camera.deadzone.height
     )
 
     // UI
@@ -130,9 +162,9 @@ export default class GameScene extends Phaser.Scene {
       padding: { x: 8, y: 4 }
     }).setScrollFactor(0).setDepth(100)
 
-    // FPS counter (top-right corner)
+    // FPS counter (top-right corner of viewport, not world)
     const fpsText = this.add.text(
-      GAME_CONFIG.world.width - 10,
+      GAME_CONFIG.viewport.width - 10,
       10,
       '',
       {
@@ -148,10 +180,13 @@ export default class GameScene extends Phaser.Scene {
       const velocity = this.player.getVelocity()
       const speed = velocity.length().toFixed(0)
       const direction = this.player.getCurrentDirection()
+      const pos = this.player.getPosition()
 
       infoText.setText([
-        'Canvas Course World - MVP',
+        'Canvas Course World - Phase 1',
         'Use Arrow Keys or WASD to move',
+        `Position: (${Math.round(pos.x)}, ${Math.round(pos.y)})`,
+        `World: ${GAME_CONFIG.world.width}×${GAME_CONFIG.world.height}`,
         `Direction: ${direction}`,
         `Speed: ${speed} px/s`
       ])

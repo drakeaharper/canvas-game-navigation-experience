@@ -59,8 +59,12 @@ export default class PreloadScene extends Phaser.Scene {
       assetText.destroy()
     })
 
-    // Create a simple grass texture programmatically
+    // Create procedural textures
     this.createGrassTexture()
+    this.createRoadTexture()
+
+    // Load building assets
+    this.loadBuildingAssets()
 
     // Load player assets
     this.loadPlayerAssets()
@@ -85,6 +89,44 @@ export default class PreloadScene extends Phaser.Scene {
     // Generate texture from graphics
     graphics.generateTexture('grass-tile', 64, 64)
     graphics.destroy()
+  }
+
+  private createRoadTexture() {
+    const graphics = this.add.graphics()
+
+    // Base road/dirt color (brown)
+    graphics.fillStyle(0x8B7355, 1)
+    graphics.fillRect(0, 0, 64, 64)
+
+    // Add darker cobblestone texture
+    graphics.fillStyle(0x6B5645, 1)
+    for (let i = 0; i < 8; i++) {
+      const x = Math.random() * 64
+      const y = Math.random() * 64
+      const size = Math.random() * 10 + 6
+      graphics.fillRect(x, y, size, size)
+    }
+
+    // Add some lighter highlights for variation
+    graphics.fillStyle(0x9B8365, 0.7)
+    for (let i = 0; i < 5; i++) {
+      const x = Math.random() * 64
+      const y = Math.random() * 64
+      const size = Math.random() * 6 + 3
+      graphics.fillRect(x, y, size, size)
+    }
+
+    // Generate texture from graphics
+    graphics.generateTexture('road-tile', 64, 64)
+    graphics.destroy()
+  }
+
+  private loadBuildingAssets() {
+    // Load the 4 primary building sprites (top-down perspective)
+    this.load.image('building-city-hall', 'assets/buildings/city_hall.png')
+    this.load.image('building-social-hall', 'assets/buildings/social_hall.png')
+    this.load.image('building-library', 'assets/buildings/university_library.png')
+    this.load.image('building-accounting', 'assets/buildings/accounting_house.png')
   }
 
   private loadPlayerAssets() {

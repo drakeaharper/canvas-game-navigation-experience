@@ -35,7 +35,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     body.setDrag(GAME_CONFIG.player.drag, GAME_CONFIG.player.drag)
 
     // Set initial scale and properties
-    this.setScale(1)
+    this.setScale(0.7) // Scale down to match building proportions
     this.setDepth(10) // Ensure player renders above ground
   }
 
