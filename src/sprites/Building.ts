@@ -120,6 +120,14 @@ export default class Building extends Phaser.Physics.Arcade.Image {
     return this.canvasFeature
   }
 
+  public setHighlighted(highlighted: boolean) {
+    if (highlighted) {
+      this.setTint(0xffff88) // Slight yellow tint
+    } else {
+      this.clearTint()
+    }
+  }
+
   public showInteractionPrompt() {
     // Future: Show "Press E to enter" prompt
   }

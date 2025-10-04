@@ -6,6 +6,7 @@ import BoundaryEffect from '../effects/BoundaryEffect'
 import DebugKeys from '../utils/DebugKeys'
 import RoadManager from '../world/RoadManager'
 import BuildingManager from '../world/BuildingManager'
+import InteractionManager from '../utils/InteractionManager'
 
 export default class GameScene extends Phaser.Scene {
   private player!: Player
@@ -14,9 +15,18 @@ export default class GameScene extends Phaser.Scene {
   private boundaryEffect!: BoundaryEffect
   private roadManager!: RoadManager
   private buildingManager!: BuildingManager
+  private interactionManager!: InteractionManager
 
   constructor() {
     super({ key: 'GameScene' })
+  }
+
+  init(data?: any) {
+    // Handle returning from building
+    if (data?.returnFromBuilding && data?.playerPosition) {
+      // Will reposition player after create()
+      this.registry.set('returnPosition', data.playerPosition)
+    }
   }
 
   create() {
@@ -62,6 +72,12 @@ export default class GameScene extends Phaser.Scene {
     // Input setup
     this.inputManager = new InputManager(this)
 
+    // Interaction manager
+    this.interactionManager = new InteractionManager(this, this.player)
+
+    // Listen for building entry events
+    this.events.on('enter-building', this.handleEnterBuilding, this)
+
     // Boundary effect
     this.boundaryEffect = new BoundaryEffect(this)
 
@@ -90,6 +106,18 @@ export default class GameScene extends Phaser.Scene {
 
     // Debug keys
     new DebugKeys(this)
+
+    // Check if returning from building
+    const returnPosition = this.registry.get('returnPosition')
+    if (returnPosition) {
+      this.player.setPosition(returnPosition.x, returnPosition.y)
+      this.registry.remove('returnPosition')
+
+      // Fade in when returning - use time.delayedCall to ensure scene is ready
+      this.time.delayedCall(100, () => {
+        this.cameras.main.fadeIn(300, 0, 0, 0)
+      })
+    }
   }
 
   private createGrassField() {
@@ -177,6 +205,11 @@ export default class GameScene extends Phaser.Scene {
 
     // Update UI every frame
     this.events.on('postupdate', () => {
+      // Guard against text objects being destroyed during scene transitions
+      if (!infoText.active || !fpsText.active) {
+        return
+      }
+
       const velocity = this.player.getVelocity()
       const speed = velocity.length().toFixed(0)
       const direction = this.player.getCurrentDirection()
@@ -212,6 +245,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.player.move(directionVector, direction8Way)
 
+    // Update interaction system
+    this.interactionManager.update()
+
     // Check for boundary collision
     const worldBounds = this.physics.world.bounds
     if (this.player.checkBoundaryCollision(worldBounds, time)) {
@@ -227,5 +263,33 @@ export default class GameScene extends Phaser.Scene {
 
       this.boundaryEffect.showBoundaryHit(pos.x, pos.y, direction)
     }
+  }
+
+  private handleEnterBuilding(data: { buildingType: string, building: any }) {
+    const { buildingType } = data
+
+    if (buildingType === 'library') {
+      this.enterLibrary()
+    } else {
+      console.log(`Building type ${buildingType} not yet implemented`)
+    }
+  }
+
+  private enterLibrary() {
+    // Get player's current position
+    const playerPos = this.player.getPosition()
+
+    // Fade out before transitioning
+    this.cameras.main.fadeOut(300, 0, 0, 0)
+
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      // Transition to library interior
+      this.scene.start('LibraryInteriorScene', {
+        playerData: {
+          previousX: playerPos.x,
+          previousY: playerPos.y
+        }
+      })
+    })
   }
 }

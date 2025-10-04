@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import PreloadScene from './scenes/PreloadScene'
 import GameScene from './scenes/GameScene'
+import LibraryInteriorScene from './scenes/LibraryInteriorScene'
 
 const DEBUG_MODE = false // Set to true to see collision boxes
 
@@ -17,7 +18,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: DEBUG_MODE
     }
   },
-  scene: [PreloadScene, GameScene],
+  scene: [PreloadScene, GameScene, LibraryInteriorScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
